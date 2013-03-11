@@ -1,0 +1,42 @@
+global t
+global count
+global result
+global already_processd
+
+probe begin{
+	printf("Tracing memcached processing request time cost\n\n")
+	printf("Press Ctrl-c to end\n")
+	count = 0
+}
+probe end{
+	printf("\n%d reqs:\n",count)
+	printf("Each time cost(ms):\n")
+	foreach(time in result){
+		printf("\t%d\n",result[time])
+	}
+}
+probe process("/home/xguru/memcached/memcached").function("drive_machine"){ 
+	fd = @var("c")->sfd
+	#printf("fd:%d\n",fd)
+	state = @var("c")->state
+	#printf("state:%d\n",state)
+	#when state is read, parser_cmd, swallow or nread
+	if(state == 3 || state == 4 || state == 6|| state == 7)
+	{
+		t[fd] = local_clock_us()
+		already_processd[fd] = 0
+	}
+		
+}
+
+probe process("/home/xguru/memcached/memcached").function("add_iov"){
+	#printf("add_iov\n")
+	fd = @var("c")->sfd
+	#printf("fd:%d\n",fd)
+
+	if(already_processd[fd] != 1){
+		result[count++] = local_clock_us() - t[fd]
+		already_processd[fd] = 1
+	}
+}
+
