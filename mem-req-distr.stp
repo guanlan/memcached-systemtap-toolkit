@@ -1,0 +1,30 @@
+global reqs
+global conns
+
+probe begin{
+	printf("Tracing memcached request and connection...\n\n")
+	printf("Press Ctrl-c to end\n")
+}
+
+probe process("/home/xguru/memcached/memcached").function("conn_new")
+{
+    conns[tid()] <<< 1
+}
+
+probe process("/home/xguru/memcached/memcached").function("process_command")
+{
+    reqs[tid()] <<< 1
+}
+
+probe end {
+    printf("\nConnections:\n")
+    foreach(tid in conns){
+	printf("Thread id %d: %d conns\n", tid,@count(conns[tid]));
+    }
+    printf("\nReqs:\n")
+    foreach(tid in reqs){
+	printf("Thread id %d: %d reqs\n", tid,@count(reqs[tid]));
+    }
+    delete conns
+    delete reqs
+}

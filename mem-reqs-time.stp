@@ -8,10 +8,12 @@ probe begin{
 }
 
 probe end{
-	printf("\n%d reqs, avg time: %d us\n",@count(result),@avg(result))
-	printf("Each req cost time(us):\n")
-	print(@hist_linear(result, 0 , 400, 10))
-
+	if(@count(result) > 0)
+	{
+		printf("\n%d reqs, avg time: %d us\n",@count(result),@avg(result))
+		printf("Each req cost time(us):\n")
+		print(@hist_linear(result, 0 , 400, 10))
+	}
 }
 
 probe process("/home/xguru/memcached/memcached").function("drive_machine"){ 
